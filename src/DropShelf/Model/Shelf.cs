@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using DropShelf.Interop;
 
 namespace DropShelf.Model;
 
@@ -13,10 +14,22 @@ namespace DropShelf.Model;
 /// </remarks>
 public sealed class Shelf
 {
-    private readonly ObservableCollection<ShelfItem> _items = [];
+    /// <summary>
+    /// Pixel size requested from the shell for tile images.
+    /// </summary>
+    /// <remarks>
+    /// Larger than the 40 unit box a tile draws it in, so the picture still looks
+    /// sharp on a display running at 200 per cent scaling. Asking for exactly the
+    /// display size would look soft on every laptop sold in the last decade.
+    /// </remarks>
+    private const int ThumbnailPixelSize = 96;
 
-    public Shelf()
+    private readonly ObservableCollection<ShelfItem> _items = [];
+    private readonly ThumbnailLoader? _thumbnails;
+
+    public Shelf(ThumbnailLoader? thumbnails = null)
     {
+        _thumbnails = thumbnails;
         Items = new ReadOnlyObservableCollection<ShelfItem>(_items);
     }
 
@@ -102,7 +115,12 @@ public sealed class Shelf
 
         if (existingIndex < 0)
         {
-            _items.Insert(0, ShelfItem.FromPath(fullPath, isDirectory));
+            var item = ShelfItem.FromPath(fullPath, isDirectory);
+            _items.Insert(0, item);
+
+            // Fire and forget. The tile appears straight away with a placeholder
+            // and swaps in the real picture whenever the shell gets round to it.
+            _thumbnails?.Request(fullPath, ThumbnailPixelSize, image => item.Thumbnail = image);
             return;
         }
 

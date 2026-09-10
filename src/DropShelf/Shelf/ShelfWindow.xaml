@@ -121,36 +121,62 @@
                         </TextBlock.Style>
                     </TextBlock>
 
-                    <!-- Plain names for now. Icons and proper tiles come next. -->
-                    <ItemsControl ItemsSource="{Binding Items}" Margin="6,6,6,6">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <!-- A transparent background rather than none.
-                                     An unpainted Border is invisible to hit
-                                     testing, so the gaps between letters would
-                                     not start a drag. -->
-                                <Border x:Name="Row"
-                                        Background="Transparent"
-                                        CornerRadius="6"
-                                        Padding="8,5"
-                                        Cursor="Hand"
-                                        ToolTip="{Binding FullPath}"
-                                        PreviewMouseLeftButtonDown="OnItemMouseLeftButtonDown"
-                                        PreviewMouseMove="OnItemMouseMove"
-                                        PreviewMouseLeftButtonUp="OnItemMouseLeftButtonUp">
-                                    <TextBlock Text="{Binding DisplayName}"
-                                               FontSize="12"
-                                               TextTrimming="CharacterEllipsis"
-                                               Foreground="#E6FFFFFF" />
-                                </Border>
-                                <DataTemplate.Triggers>
-                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Row" Property="Background" Value="#1FFFFFFF" />
-                                    </Trigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <ScrollViewer MaxHeight="320"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Items}" Margin="4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- A transparent background rather than none.
+                                         An unpainted Border is invisible to hit
+                                         testing, so the gaps around the icon would
+                                         not start a drag. -->
+                                    <Border x:Name="Tile"
+                                            Width="76"
+                                            Background="Transparent"
+                                            CornerRadius="8"
+                                            Padding="4,8"
+                                            Cursor="Hand"
+                                            ToolTip="{Binding FullPath}"
+                                            PreviewMouseLeftButtonDown="OnItemMouseLeftButtonDown"
+                                            PreviewMouseMove="OnItemMouseMove"
+                                            PreviewMouseLeftButtonUp="OnItemMouseLeftButtonUp">
+                                        <StackPanel>
+                                            <Grid Width="40" Height="40">
+                                                <!-- Shown until the shell has
+                                                     produced a real picture, so a
+                                                     slow thumbnail leaves a shape
+                                                     rather than a hole. -->
+                                                <Border CornerRadius="6" Background="#1FFFFFFF" />
+                                                <Image Source="{Binding Thumbnail}"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                                       Stretch="Uniform" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       Margin="0,6,0,0"
+                                                       MaxHeight="28"
+                                                       FontSize="10"
+                                                       LineHeight="14"
+                                                       TextAlignment="Center"
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="#D9FFFFFF" />
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Tile" Property="Background" Value="#1FFFFFFF" />
+                                        </Trigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </Grid>
             </Border>
         </Grid>

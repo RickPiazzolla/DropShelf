@@ -1,4 +1,7 @@
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Windows.Media;
 
 namespace DropShelf.Model;
 
@@ -11,8 +14,10 @@ namespace DropShelf.Model;
 /// an item can go stale: the user is free to delete or move the file while it is
 /// sitting here, and the path will then point at nothing.
 /// </remarks>
-public sealed class ShelfItem
+public sealed class ShelfItem : INotifyPropertyChanged
 {
+    private ImageSource? _thumbnail;
+
     private ShelfItem(string fullPath, string displayName, bool isDirectory)
     {
         FullPath = fullPath;
@@ -30,6 +35,34 @@ public sealed class ShelfItem
     public bool IsDirectory { get; }
 
     public DateTimeOffset AddedAt { get; }
+
+    /// <summary>
+    /// The shell's picture for this file, or null until one has been produced.
+    /// </summary>
+    /// <remarks>
+    /// Starts empty and is filled in later, because producing it means asking the
+    /// shell, which is slow enough to be worth doing off the UI thread. The tile
+    /// shows a placeholder in the meantime.
+    /// </remarks>
+    public ImageSource? Thumbnail
+    {
+        get => _thumbnail;
+        set
+        {
+            if (ReferenceEquals(_thumbnail, value))
+            {
+                return;
+            }
+
+            _thumbnail = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     /// <summary>
     /// True if the path still resolves to something on disk.

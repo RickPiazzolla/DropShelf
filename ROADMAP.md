@@ -8,12 +8,12 @@ Rough order of work. Items move to Done as they land.
 - [x] Tray icon, no taskbar entry, exit from the tray menu
 - [x] Borderless always-on-top shelf window, draggable by its header
 - [x] Accept dropped files and hold them in memory
-- [ ] Show held files as a row of tiles
+- [x] Show held files as a grid of tiles
 - [x] Drag files back out to Explorer and other apps
 
 ## Milestone 2 — feels like a real utility
 
-- [ ] Real shell icons and thumbnails for held files
+- [x] Real shell icons and thumbnails for held files
 - [ ] Remove a single item, clear the shelf
 - [ ] Global hotkey to summon and dismiss the shelf
 - [ ] Shelf follows you across virtual desktops
