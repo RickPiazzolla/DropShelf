@@ -1,6 +1,10 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using DropShelf.Model;
 
 namespace DropShelf.Shelf;
@@ -100,6 +104,42 @@ public partial class ShelfWindow : Window
 
     private void OnHideClick(object sender, RoutedEventArgs e) => HideShelf();
 
+    private void OnClearClick(object sender, RoutedEventArgs e) => _shelf.Clear();
+
+    private void OnRemoveItemClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ShelfItem item })
+        {
+            _shelf.Remove(item);
+        }
+
+        // Stops the click bubbling up to the tile behind the badge.
+        e.Handled = true;
+    }
+
+    private void OpenItem(ShelfItem item)
+    {
+        if (!item.StillExists())
+        {
+            _shelf.Remove(item);
+            return;
+        }
+
+        try
+        {
+            // UseShellExecute hands the path to the shell, which opens it with
+            // whatever the user has associated with that type. Without it, .NET
+            // tries to execute the file directly and anything that is not a
+            // program fails.
+            Process.Start(new ProcessStartInfo(item.FullPath) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            // No association, or the user dismissed the "open with" dialog.
+            // Neither is worth interrupting them over.
+        }
+    }
+
     private void OnCardDragOver(object sender, DragEventArgs e)
     {
         // Copy rather than Move. Move would tell the source application that
@@ -136,11 +176,48 @@ public partial class ShelfWindow : Window
 
     private void OnItemMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: ShelfItem item })
+        // The remove badge sits inside the tile, and preview events travel from
+        // the outside in, so this handler sees the press before the button does.
+        // Without this check a press that wanders a few pixels would start
+        // dragging the file the user was trying to throw away.
+        if (IsWithinButton(e.OriginalSource as DependencyObject))
         {
-            _pressOrigin = e.GetPosition(null);
-            _pressedItem = item;
+            return;
         }
+
+        if (sender is not FrameworkElement { DataContext: ShelfItem item })
+        {
+            return;
+        }
+
+        // Border is a Decorator rather than a Control, so it has no
+        // MouseDoubleClick event of its own. The click count on the press carries
+        // the same information.
+        if (e.ClickCount == 2)
+        {
+            _pressedItem = null;
+            OpenItem(item);
+            e.Handled = true;
+            return;
+        }
+
+        _pressOrigin = e.GetPosition(null);
+        _pressedItem = item;
+    }
+
+    private static bool IsWithinButton(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is ButtonBase)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private void OnItemMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => _pressedItem = null;

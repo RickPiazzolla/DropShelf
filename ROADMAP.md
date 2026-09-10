@@ -14,7 +14,7 @@ Rough order of work. Items move to Done as they land.
 ## Milestone 2 — feels like a real utility
 
 - [x] Real shell icons and thumbnails for held files
-- [ ] Remove a single item, clear the shelf
+- [x] Remove a single item, clear the shelf
 - [ ] Global hotkey to summon and dismiss the shelf
 - [ ] Shelf follows you across virtual desktops
 - [ ] Screen-edge trigger so the shelf appears when a drag starts
