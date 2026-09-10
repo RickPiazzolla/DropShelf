@@ -21,6 +21,11 @@ public sealed class TrayIcon : IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Raised when the user asks to see or dismiss the shelf.
+    /// </summary>
+    public event EventHandler? ToggleShelfRequested;
+
+    /// <summary>
     /// Raised when the user chooses to quit.
     /// </summary>
     public event EventHandler? ExitRequested;
@@ -30,6 +35,13 @@ public sealed class TrayIcon : IDisposable
         _icon = LoadTrayIcon();
 
         _menu = new ContextMenuStrip();
+
+        var toggleItem = new ToolStripMenuItem("Show or hide shelf");
+        toggleItem.Click += (_, _) => ToggleShelfRequested?.Invoke(this, EventArgs.Empty);
+        _menu.Items.Add(toggleItem);
+
+        _menu.Items.Add(new ToolStripSeparator());
+
         var exitItem = new ToolStripMenuItem("Exit DropShelf");
         exitItem.Click += (_, _) => ExitRequested?.Invoke(this, EventArgs.Empty);
         _menu.Items.Add(exitItem);
@@ -42,6 +54,19 @@ public sealed class TrayIcon : IDisposable
             ContextMenuStrip = _menu,
             Visible = true,
         };
+
+        _notifyIcon.MouseClick += OnMouseClick;
+    }
+
+    private void OnMouseClick(object? sender, MouseEventArgs e)
+    {
+        // Right click is left alone so that Windows can open the context menu
+        // itself, which it does with the correct placement and dismissal
+        // behaviour for the notification area.
+        if (e.Button == MouseButtons.Left)
+        {
+            ToggleShelfRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private static Icon LoadTrayIcon()

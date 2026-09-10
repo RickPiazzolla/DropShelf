@@ -1,4 +1,5 @@
 using System.Windows;
+using DropShelf.Shelf;
 using DropShelf.Tray;
 
 namespace DropShelf;
@@ -16,6 +17,7 @@ namespace DropShelf;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    private ShelfWindow? _shelfWindow;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -25,9 +27,17 @@ public partial class App : Application
         // shelf is dismissed. The tray icon owns the lifetime instead.
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
+        // Constructed but not shown. Building it up front means the first summon
+        // is instant, and it gives the shelf somewhere to hold items before the
+        // user has ever looked at it.
+        _shelfWindow = new ShelfWindow();
+
         _trayIcon = new TrayIcon();
+        _trayIcon.ToggleShelfRequested += OnToggleShelfRequested;
         _trayIcon.ExitRequested += OnExitRequested;
     }
+
+    private void OnToggleShelfRequested(object? sender, EventArgs e) => _shelfWindow?.ToggleShelf();
 
     private void OnExitRequested(object? sender, EventArgs e) => Shutdown();
 
@@ -35,6 +45,9 @@ public partial class App : Application
     {
         _trayIcon?.Dispose();
         _trayIcon = null;
+
+        _shelfWindow?.CloseForShutdown();
+        _shelfWindow = null;
 
         base.OnExit(e);
     }
