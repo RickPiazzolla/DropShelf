@@ -29,6 +29,17 @@ public partial class ShelfWindow : Window
     private bool _allowClose;
     private bool _positionRestored;
 
+    /// <summary>
+    /// True while an item is being dragged off the shelf.
+    /// </summary>
+    /// <remarks>
+    /// The shelf usually sits against the right hand edge of the screen, which is
+    /// exactly where the edge catcher watches for a drag. Without this the catcher
+    /// slides in the instant the user starts dragging a tile away, right under
+    /// their pointer, offering to catch the thing they are trying to remove.
+    /// </remarks>
+    public bool IsDraggingOut { get; private set; }
+
     public ShelfWindow(Shelf shelf, DropReader dropReader, AppSettings settings)
     {
         _shelf = shelf;
@@ -400,7 +411,13 @@ public partial class ShelfWindow : Window
         // One per line is what Explorer produces for a multiple file copy.
         data.SetData(DataFormats.UnicodeText, string.Join(Environment.NewLine, paths));
 
+        // Marks the drag as ours so that neither the shelf nor the edge catcher
+        // will take it back in. See DropReader.SelfDragFormat for why that
+        // matters.
+        data.SetData(DropReader.SelfDragFormat, true);
+
         DragDropEffects result;
+        IsDraggingOut = true;
 
         try
         {
@@ -416,6 +433,10 @@ public partial class ShelfWindow : Window
             // progress, which happens if the user is quick. There is nothing to
             // recover and nothing the user needs told.
             return;
+        }
+        finally
+        {
+            IsDraggingOut = false;
         }
 
         // None means the drag was abandoned, over an app that would not take it or

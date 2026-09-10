@@ -26,21 +26,52 @@ public sealed class DropReader(StagingArea staging)
     private const string UrlFormat = "UniformResourceLocatorW";
     private const string PngFormat = "PNG";
 
+    /// <summary>
+    /// A private marker put on drags that started inside DropShelf.
+    /// </summary>
+    /// <remarks>
+    /// The name is arbitrary and means nothing to any other application, which is
+    /// the point. Windows carries unrecognised formats along untouched, so it
+    /// arrives back here intact and nowhere else notices it.
+    /// <para>
+    /// Without it, dragging an item off a shelf parked at the right hand edge of
+    /// the screen trips the edge catcher, which slides in under the pointer and
+    /// accepts the drop. The user aims at a folder and hits DropShelf instead.
+    /// That used to be a harmless no-op, since the files were already held, but
+    /// once the shelf can be set to clear items after a successful drag it turns
+    /// into losing the file outright.
+    /// </para>
+    /// </remarks>
+    public const string SelfDragFormat = "DropShelf.SelfDrag";
+
     private readonly StagingArea _staging = staging;
 
     /// <summary>
     /// True if there is anything here worth putting on a shelf.
     /// </summary>
     public static bool CanRead(IDataObject data)
-        => data.GetDataPresent(DataFormats.FileDrop)
-            || VirtualFileReader.IsPresent(data)
-            || data.GetDataPresent(PngFormat)
-            || data.GetDataPresent(DataFormats.Bitmap)
-            || data.GetDataPresent(UrlFormat)
-            || data.GetDataPresent(DataFormats.UnicodeText);
+        => !IsOwnDrag(data)
+            && (data.GetDataPresent(DataFormats.FileDrop)
+                || VirtualFileReader.IsPresent(data)
+                || data.GetDataPresent(PngFormat)
+                || data.GetDataPresent(DataFormats.Bitmap)
+                || data.GetDataPresent(UrlFormat)
+                || data.GetDataPresent(DataFormats.UnicodeText));
+
+    /// <summary>
+    /// True if this drag came out of DropShelf, and so must not be taken back in.
+    /// </summary>
+    public static bool IsOwnDrag(IDataObject data) => data.GetDataPresent(SelfDragFormat);
 
     public IReadOnlyList<string> Read(IDataObject data)
     {
+        // Checked again rather than trusting the caller. Reading a drag that came
+        // out of this app would silently re-add the items being dragged away.
+        if (IsOwnDrag(data))
+        {
+            return [];
+        }
+
         // Already files. Nothing to write, and nothing to lose.
         if (data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } paths)
         {

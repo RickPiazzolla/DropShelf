@@ -301,7 +301,19 @@ public partial class App : Application
     {
         // The hook callback runs on whichever thread saw the mouse event, which
         // is not necessarily this one, and windows can only be touched here.
-        Dispatcher.BeginInvoke(() => _catcher?.ShowCatcher());
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Not while the user is dragging something off the shelf. The shelf
+            // usually sits at the right hand edge, so that gesture crosses the
+            // catcher's trigger zone almost immediately, and offering to catch
+            // the item being taken away is the opposite of helpful.
+            if (_shelfWindow?.IsDraggingOut == true)
+            {
+                return;
+            }
+
+            _catcher?.ShowCatcher();
+        });
     }
 
     private void OnDragEnded(object? sender, EventArgs e)
