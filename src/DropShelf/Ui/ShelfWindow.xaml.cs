@@ -2,12 +2,13 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using DropShelf.DropHandling;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using DropShelf.DropHandling;
 using DropShelf.Model;
+using DropShelf.Settings;
 
 namespace DropShelf.Ui;
 
@@ -24,13 +25,18 @@ public partial class ShelfWindow : Window
 {
     private readonly Shelf _shelf;
     private readonly DropReader _dropReader;
+    private readonly AppSettings _settings;
     private bool _allowClose;
     private bool _positionRestored;
 
-    public ShelfWindow(Shelf shelf, DropReader dropReader)
+    public ShelfWindow(Shelf shelf, DropReader dropReader, AppSettings settings)
     {
         _shelf = shelf;
         _dropReader = dropReader;
+
+        // The same instance the tray menu writes to, so a setting changed while
+        // the shelf is open takes effect on the very next drag.
+        _settings = settings;
 
         InitializeComponent();
 
@@ -203,6 +209,8 @@ public partial class ShelfWindow : Window
     // impossible to click.
     private Point _pressOrigin;
     private ShelfItem? _pressedItem;
+    private ShelfItem? _selectionAnchor;
+    private ShelfItem? _collapseSelectionTo;
 
     private void OnItemMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -226,13 +234,61 @@ public partial class ShelfWindow : Window
         if (e.ClickCount == 2)
         {
             _pressedItem = null;
+            _collapseSelectionTo = null;
             OpenItem(item);
             e.Handled = true;
             return;
         }
 
+        ApplySelectionForPress(item);
+
         _pressOrigin = e.GetPosition(null);
         _pressedItem = item;
+    }
+
+    /// <summary>
+    /// Works out what a press should do to the selection.
+    /// </summary>
+    /// <remarks>
+    /// Follows the conventions Explorer already taught everyone. Ctrl adds and
+    /// removes one item, Shift extends from the last one touched, and a plain
+    /// click selects just the one.
+    /// <para>
+    /// The exception is a plain press on an item that is already part of a
+    /// selection. Narrowing to it immediately would make dragging a group
+    /// impossible, since the press that begins the drag would first throw the
+    /// group away. So it is deferred to the mouse up, and only happens if the
+    /// press turned out to be a click rather than the start of a drag.
+    /// </para>
+    /// </remarks>
+    private void ApplySelectionForPress(ShelfItem item)
+    {
+        _collapseSelectionTo = null;
+
+        var modifiers = Keyboard.Modifiers;
+
+        if (modifiers.HasFlag(ModifierKeys.Control))
+        {
+            _shelf.ToggleSelection(item);
+            _selectionAnchor = item;
+            return;
+        }
+
+        if (modifiers.HasFlag(ModifierKeys.Shift) && _selectionAnchor is not null)
+        {
+            _shelf.SelectRange(_selectionAnchor, item);
+            return;
+        }
+
+        if (item.IsSelected && _shelf.SelectedCount > 1)
+        {
+            _collapseSelectionTo = item;
+            _selectionAnchor = item;
+            return;
+        }
+
+        _shelf.SelectOnly(item);
+        _selectionAnchor = item;
     }
 
     private static bool IsWithinButton(DependencyObject? source)
@@ -250,7 +306,33 @@ public partial class ShelfWindow : Window
         return false;
     }
 
-    private void OnItemMouseLeftButtonUp(object sender, MouseButtonEventArgs e) => _pressedItem = null;
+    private void OnItemMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _pressedItem = null;
+
+        // The press was a click after all, not the beginning of a drag, so the
+        // selection narrows to the item that was clicked.
+        if (_collapseSelectionTo is { } item)
+        {
+            _collapseSelectionTo = null;
+            _shelf.SelectOnly(item);
+        }
+    }
+
+    /// <summary>
+    /// Clears the selection when the user clicks the background rather than a tile.
+    /// </summary>
+    private void OnPanelMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Only when the click landed on the panel itself. A click that started on
+        // a tile bubbles up to here too, and clearing then would undo the
+        // selection the tile just made.
+        if (ReferenceEquals(e.OriginalSource, sender))
+        {
+            _shelf.ClearSelection();
+            _selectionAnchor = null;
+        }
+    }
 
     private void OnItemMouseMove(object sender, MouseEventArgs e)
     {
@@ -273,9 +355,17 @@ public partial class ShelfWindow : Window
         // after the call happens much later than it reads.
         _pressedItem = null;
 
+        // The press turned into a drag, so the deferred narrowing must not happen.
+        // Otherwise dragging a group of four would quietly drop three of them.
+        _collapseSelectionTo = null;
+
         BeginItemDrag(sender as DependencyObject, item);
     }
 
+    /// <summary>
+    /// Drags the selection, or just the item under the pointer if nothing is
+    /// selected.
+    /// </summary>
     private void BeginItemDrag(DependencyObject? source, ShelfItem item)
     {
         if (source is null)
@@ -283,20 +373,34 @@ public partial class ShelfWindow : Window
             return;
         }
 
+        var dragging = _shelf.SelectionOrJust(item);
+
         // The user is free to delete or move a file while it sits on the shelf.
         // Handing a dead path to another application produces a confusing error
-        // in that application rather than in this one, so it is checked here.
-        if (!item.StillExists())
+        // in that application rather than in this one, so they are checked first
+        // and anything that has gone away is quietly taken off the shelf.
+        var missing = dragging.Where(candidate => !candidate.StillExists()).ToList();
+        if (missing.Count > 0)
         {
-            _shelf.Remove(item);
+            _shelf.RemoveAll(missing);
+            dragging = dragging.Except(missing).ToList();
+        }
+
+        if (dragging.Count == 0)
+        {
             return;
         }
 
-        var data = new DataObject();
-        data.SetData(DataFormats.FileDrop, new[] { item.FullPath });
+        var paths = dragging.Select(candidate => candidate.FullPath).ToArray();
 
-        // Some older targets, and most plain text fields, take the path as text.
-        data.SetData(DataFormats.UnicodeText, item.FullPath);
+        var data = new DataObject();
+        data.SetData(DataFormats.FileDrop, paths);
+
+        // Some older targets, and most plain text fields, take the paths as text.
+        // One per line is what Explorer produces for a multiple file copy.
+        data.SetData(DataFormats.UnicodeText, string.Join(Environment.NewLine, paths));
+
+        DragDropEffects result;
 
         try
         {
@@ -304,13 +408,22 @@ public partial class ShelfWindow : Window
             // carries out the operation, and a target that chose Move would
             // delete the user's original file. The shelf holds a reference, not a
             // copy, so it has no business authorising that.
-            DragDrop.DoDragDrop(source, data, DragDropEffects.Copy | DragDropEffects.Link);
+            result = DragDrop.DoDragDrop(source, data, DragDropEffects.Copy | DragDropEffects.Link);
         }
         catch (COMException)
         {
             // The shell refuses to start a drag while another one is already in
             // progress, which happens if the user is quick. There is nothing to
             // recover and nothing the user needs told.
+            return;
+        }
+
+        // None means the drag was abandoned, over an app that would not take it or
+        // by pressing Escape. Clearing the shelf on that would lose the item for
+        // nothing, so the setting only applies to a drop that actually landed.
+        if (_settings.RemoveAfterDragOut && result != DragDropEffects.None)
+        {
+            _shelf.RemoveAll(dragging);
         }
     }
 

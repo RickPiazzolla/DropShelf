@@ -109,8 +109,15 @@ public partial class App : Application
         _trayIcon.OpenStagingRequested += OnOpenStagingRequested;
         _trayIcon.StartWithWindowsToggled += OnStartWithWindowsToggled;
         _trayIcon.RememberShelfToggled += OnRememberShelfToggled;
+        _trayIcon.RemoveAfterDragOutToggled += OnRemoveAfterDragOutToggled;
         _trayIcon.ExitRequested += OnExitRequested;
-        _trayIcon.ShowSettings(_settings.StartWithWindows, _settings.RememberShelf);
+        _trayIcon.ShowSettings(_settings.StartWithWindows, _settings.RememberShelf, _settings.RemoveAfterDragOut);
+    }
+
+    private void OnRemoveAfterDragOutToggled(object? sender, bool enabled)
+    {
+        _settings.RemoveAfterDragOut = enabled;
+        _settings.Save();
     }
 
     private void OnStartWithWindowsToggled(object? sender, bool enabled)
@@ -118,7 +125,7 @@ public partial class App : Application
         if (!StartupRegistration.Set(enabled))
         {
             // The registry write failed, so the tick would be a lie. Put it back.
-            _trayIcon?.ShowSettings(StartupRegistration.IsEnabled(), _settings.RememberShelf);
+            _trayIcon?.ShowSettings(StartupRegistration.IsEnabled(), _settings.RememberShelf, _settings.RemoveAfterDragOut);
             return;
         }
 
@@ -141,7 +148,7 @@ public partial class App : Application
 
     private ShelfWindow CreateShelfWindow()
     {
-        var window = new ShelfWindow(_shelf!, _dropReader!);
+        var window = new ShelfWindow(_shelf!, _dropReader!, _settings);
 
         if (_settings.ShelfLeft is { } left && _settings.ShelfTop is { } top && IsOnAScreen(left, top))
         {

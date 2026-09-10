@@ -114,12 +114,22 @@
                   Height="30"
                   Background="Transparent"
                   MouseLeftButtonDown="OnHeaderMouseLeftButtonDown">
-                <TextBlock Text="DropShelf"
-                           Margin="12,0,0,0"
-                           VerticalAlignment="Center"
-                           FontSize="11"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource HeaderForeground}" />
+                <StackPanel Orientation="Horizontal"
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="DropShelf"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource HeaderForeground}" />
+
+                    <!-- Only present while something is selected, so the header
+                         stays quiet in the ordinary case. -->
+                    <TextBlock Margin="8,0,0,0"
+                               FontSize="11"
+                               Foreground="#CC58A6FF"
+                               Text="{Binding SelectedCount, StringFormat='{}{0} selected'}"
+                               Visibility="{Binding SelectedCount, Converter={StaticResource CountToVisibility}}" />
+                </StackPanel>
                 <StackPanel Orientation="Horizontal"
                             Margin="0,0,6,0"
                             HorizontalAlignment="Right"
@@ -145,7 +155,8 @@
                     Margin="10,0,10,10"
                     CornerRadius="9"
                     Background="#0FFFFFFF">
-                <Grid>
+                <Grid Background="Transparent"
+                      MouseLeftButtonDown="OnPanelMouseLeftButtonDown">
                     <!-- Only shown while the shelf is empty. Binding straight to
                          Count works because ObservableCollection raises a property
                          change for it, and ReadOnlyObservableCollection passes
@@ -185,6 +196,8 @@
                                     <Border x:Name="Tile"
                                             Width="76"
                                             Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            BorderThickness="1"
                                             CornerRadius="8"
                                             Padding="4,8"
                                             Cursor="Hand"
@@ -229,6 +242,15 @@
                                             <Setter TargetName="Tile" Property="Background" Value="#1FFFFFFF" />
                                             <Setter TargetName="RemoveBadge" Property="Visibility" Value="Visible" />
                                         </Trigger>
+
+                                        <!-- After the hover trigger on purpose.
+                                             Later triggers win, so a selected tile
+                                             keeps looking selected while the
+                                             pointer is over it. -->
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter TargetName="Tile" Property="Background" Value="#3D58A6FF" />
+                                            <Setter TargetName="Tile" Property="BorderBrush" Value="#CC58A6FF" />
+                                        </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
