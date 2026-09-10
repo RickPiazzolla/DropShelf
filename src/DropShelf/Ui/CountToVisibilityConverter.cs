@@ -1,8 +1,8 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace DropShelf.Shelf;
+namespace DropShelf.Ui;
 
 /// <summary>
 /// Turns a count into <see cref="Visibility.Visible"/> when it is above zero.

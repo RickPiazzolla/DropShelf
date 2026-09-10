@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -9,7 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using DropShelf.Model;
 
-namespace DropShelf.Shelf;
+namespace DropShelf.Ui;
 
 /// <summary>
 /// The floating card that holds dragged items.
@@ -22,12 +22,12 @@ namespace DropShelf.Shelf;
 /// </remarks>
 public partial class ShelfWindow : Window
 {
-    private readonly Model.Shelf _shelf;
+    private readonly Shelf _shelf;
     private readonly DropReader _dropReader;
     private bool _allowClose;
     private bool _positionRestored;
 
-    public ShelfWindow(Model.Shelf shelf, DropReader dropReader)
+    public ShelfWindow(Shelf shelf, DropReader dropReader)
     {
         _shelf = shelf;
         _dropReader = dropReader;

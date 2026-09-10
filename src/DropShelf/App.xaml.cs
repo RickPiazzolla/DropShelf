@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -6,8 +6,9 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using DropShelf.DropHandling;
 using DropShelf.Interop;
-using DropShelf.Shelf;
+using DropShelf.Model;
 using DropShelf.Tray;
+using DropShelf.Ui;
 
 namespace DropShelf;
 
@@ -25,7 +26,7 @@ public partial class App : Application
 {
     private TrayIcon? _trayIcon;
     private ShelfWindow? _shelfWindow;
-    private Model.Shelf? _shelf;
+    private Shelf? _shelf;
     private ThumbnailLoader? _thumbnails;
     private MessageWindow? _messageWindow;
     private GlobalHotKey? _hotKey;
@@ -47,7 +48,7 @@ public partial class App : Application
         _staging = new StagingArea();
         _dropReader = new DropReader(_staging);
 
-        _shelf = new Model.Shelf(_thumbnails);
+        _shelf = new Shelf(_thumbnails);
         _shelfWindow = CreateShelfWindow();
 
         _messageWindow = new MessageWindow("DropShelf.Messages");

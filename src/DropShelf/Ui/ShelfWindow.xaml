@@ -1,7 +1,7 @@
-<Window x:Class="DropShelf.Shelf.ShelfWindow"
+﻿<Window x:Class="DropShelf.Ui.ShelfWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:shelf="clr-namespace:DropShelf.Shelf"
+        xmlns:ui="clr-namespace:DropShelf.Ui"
         Title="DropShelf"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -13,7 +13,7 @@
         SizeToContent="WidthAndHeight">
 
     <Window.Resources>
-        <shelf:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <ui:CountToVisibilityConverter x:Key="CountToVisibility" />
 
         <!-- Nearly opaque on purpose. An earlier pass used #EE and page text
              behind the shelf stayed legible through it, which made the card look
