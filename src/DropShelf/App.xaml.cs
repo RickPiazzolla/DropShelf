@@ -32,6 +32,8 @@ public partial class App : Application
     private GlobalHotKey? _hotKey;
     private StagingArea? _staging;
     private DropReader? _dropReader;
+    private CatcherWindow? _catcher;
+    private EdgeDragWatcher? _dragWatcher;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -50,6 +52,15 @@ public partial class App : Application
 
         _shelf = new Shelf(_thumbnails);
         _shelfWindow = CreateShelfWindow();
+
+        _catcher = new CatcherWindow(_shelf, _dropReader);
+        _catcher.Caught += OnCaught;
+
+        // Watches raw mouse input for a drag pushed against the right edge of the
+        // screen, which is the only signal Windows offers that a drag is underway.
+        _dragWatcher = new EdgeDragWatcher();
+        _dragWatcher.EdgeReached += OnEdgeReached;
+        _dragWatcher.DragEnded += OnDragEnded;
 
         _messageWindow = new MessageWindow("DropShelf.Messages");
 
@@ -156,6 +167,26 @@ public partial class App : Application
         return replacement;
     }
 
+    private void OnEdgeReached(object? sender, EventArgs e)
+    {
+        // The hook callback runs on whichever thread saw the mouse event, which
+        // is not necessarily this one, and windows can only be touched here.
+        Dispatcher.BeginInvoke(() => _catcher?.ShowCatcher());
+    }
+
+    private void OnDragEnded(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            // A drop that landed on the catcher has already hidden it. This
+            // covers the far more common case of the gesture being a false alarm,
+            // such as selecting text out to the edge of the screen.
+            _catcher?.HideCatcher();
+        });
+    }
+
+    private void OnCaught(object? sender, EventArgs e) => ShowShelfHere();
+
     private void OnOpenStagingRequested(object? sender, EventArgs e)
     {
         if (_staging is null)
@@ -189,6 +220,13 @@ public partial class App : Application
 
         _messageWindow?.Dispose();
         _messageWindow = null;
+
+        // Before the windows, because the hook fires into them.
+        _dragWatcher?.Dispose();
+        _dragWatcher = null;
+
+        _catcher?.CloseForShutdown();
+        _catcher = null;
 
         _shelfWindow?.CloseForShutdown();
         _shelfWindow = null;

@@ -17,7 +17,7 @@ Rough order of work. Items move to Done as they land.
 - [x] Remove a single item, clear the shelf
 - [x] Global hotkey to summon and dismiss the shelf
 - [x] Shelf follows you across virtual desktops
-- [ ] Screen-edge trigger so the shelf appears when a drag starts
+- [x] Screen-edge trigger so the shelf appears when a drag starts
 
 ## Milestone 3 — the awkward cases
 
@@ -40,5 +40,8 @@ Rough order of work. Items move to Done as they land.
   not on. A new window is created on the current desktop, so no private API is
   needed, and the items survive because they live in the model rather than the
   window.
-- Detecting that a drag has started anywhere on the system needs a low-level mouse
-  hook. Needs care to avoid a laggy cursor.
+- ~~Detecting that a drag has started anywhere on the system needs a low-level
+  mouse hook.~~ Settled, with one compromise. The hook cannot tell a file drag
+  from a text selection, so the catcher appears on reaching the screen edge with
+  the button held rather than on any drag at all. The callback does nothing but
+  compare two coordinates, which keeps the cursor responsive.
