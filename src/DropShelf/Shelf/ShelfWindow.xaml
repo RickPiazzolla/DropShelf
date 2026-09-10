@@ -58,7 +58,10 @@
             CornerRadius="14"
             Background="{StaticResource ShelfBackground}"
             BorderBrush="{StaticResource ShelfBorder}"
-            BorderThickness="1">
+            BorderThickness="1"
+            AllowDrop="True"
+            DragOver="OnCardDragOver"
+            Drop="OnCardDrop">
         <Border.Effect>
             <DropShadowEffect BlurRadius="26" ShadowDepth="7" Direction="270" Opacity="0.5" Color="Black" />
         </Border.Effect>
@@ -96,11 +99,42 @@
                     Margin="10,0,10,10"
                     CornerRadius="9"
                     Background="#0FFFFFFF">
-                <TextBlock Text="Drop files here"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="12"
-                           Foreground="{StaticResource EmptyForeground}" />
+                <Grid>
+                    <!-- Only shown while the shelf is empty. Binding straight to
+                         Count works because ObservableCollection raises a property
+                         change for it, and ReadOnlyObservableCollection passes
+                         that through. -->
+                    <TextBlock Text="Drop files here"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{StaticResource EmptyForeground}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Plain names for now. Icons and proper tiles come next. -->
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="10,8,10,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}"
+                                           Margin="0,0,0,4"
+                                           FontSize="12"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="#E6FFFFFF"
+                                           ToolTip="{Binding FullPath}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
             </Border>
         </Grid>
     </Border>

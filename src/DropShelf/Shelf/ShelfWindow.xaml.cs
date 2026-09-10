@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using DropShelf.Model;
 
 namespace DropShelf.Shelf;
 
@@ -14,11 +15,16 @@ namespace DropShelf.Shelf;
 /// </remarks>
 public partial class ShelfWindow : Window
 {
+    private readonly Model.Shelf _shelf;
     private bool _allowClose;
 
-    public ShelfWindow()
+    public ShelfWindow(Model.Shelf shelf)
     {
+        _shelf = shelf;
+
         InitializeComponent();
+
+        DataContext = _shelf;
         SourceInitialized += OnSourceInitialized;
     }
 
@@ -92,6 +98,30 @@ public partial class ShelfWindow : Window
     }
 
     private void OnHideClick(object sender, RoutedEventArgs e) => HideShelf();
+
+    private void OnCardDragOver(object sender, DragEventArgs e)
+    {
+        // Copy rather than Move. Move would tell the source application that
+        // DropShelf has taken ownership, and Explorer acts on that by deleting
+        // the original once the drop completes. The shelf only records a path.
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
+            ? DragDropEffects.Copy
+            : DragDropEffects.None;
+
+        // Without this the parent chain gets a say and can override the effect,
+        // which shows the user the wrong cursor.
+        e.Handled = true;
+    }
+
+    private void OnCardDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] paths)
+        {
+            _shelf.AddPaths(paths);
+        }
+
+        e.Handled = true;
+    }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {

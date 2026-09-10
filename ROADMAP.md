@@ -6,8 +6,8 @@ Rough order of work. Items move to Done as they land.
 
 - [x] WPF project scaffold targeting .NET 9
 - [x] Tray icon, no taskbar entry, exit from the tray menu
-- [ ] Borderless always-on-top shelf window, draggable by its body
-- [ ] Accept dropped files and hold them in memory
+- [x] Borderless always-on-top shelf window, draggable by its header
+- [x] Accept dropped files and hold them in memory
 - [ ] Show held files as a row of tiles
 - [ ] Drag files back out to Explorer and other apps
 

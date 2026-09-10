@@ -18,6 +18,7 @@ public partial class App : Application
 {
     private TrayIcon? _trayIcon;
     private ShelfWindow? _shelfWindow;
+    private Model.Shelf? _shelf;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -30,7 +31,8 @@ public partial class App : Application
         // Constructed but not shown. Building it up front means the first summon
         // is instant, and it gives the shelf somewhere to hold items before the
         // user has ever looked at it.
-        _shelfWindow = new ShelfWindow();
+        _shelf = new Model.Shelf();
+        _shelfWindow = new ShelfWindow(_shelf);
 
         _trayIcon = new TrayIcon();
         _trayIcon.ToggleShelfRequested += OnToggleShelfRequested;
