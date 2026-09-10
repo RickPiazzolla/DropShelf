@@ -36,10 +36,26 @@ public partial class App : Application
     private CatcherWindow? _catcher;
     private EdgeDragWatcher? _dragWatcher;
     private AppSettings _settings = new();
+    private Mutex? _singleInstance;
+    private uint _showShelfMessage;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Same string in every copy of the app, so both sides agree on the number
+        // without either knowing the other's window handle.
+        _showShelfMessage = NativeMethods.RegisterWindowMessage("DropShelf.ShowShelf");
+
+        if (!ClaimSingleInstance())
+        {
+            // Another copy is already running. Rather than starting a second tray
+            // icon that fights the first one for the hot key, ask the one that is
+            // already there to show itself, and stand down.
+            NativeMethods.PostMessage(NativeMethods.HWND_BROADCAST, _showShelfMessage, IntPtr.Zero, IntPtr.Zero);
+            Shutdown();
+            return;
+        }
 
         // The default, OnLastWindowClose, would end the process the moment the
         // shelf is dismissed. The tray icon owns the lifetime instead.
@@ -80,6 +96,7 @@ public partial class App : Application
         _dragWatcher.DragEnded += OnDragEnded;
 
         _messageWindow = new MessageWindow("DropShelf.Messages");
+        _messageWindow.MessageReceived += OnMessageReceived;
 
         _hotKey = new GlobalHotKey(
             _messageWindow,
@@ -156,6 +173,41 @@ public partial class App : Application
             SystemParameters.VirtualScreenHeight);
 
         return bounds.Contains(new Point(left + MinimumVisible, top + MinimumVisible));
+    }
+
+    /// <summary>
+    /// Takes the single instance mutex, reporting whether this copy got it.
+    /// </summary>
+    /// <remarks>
+    /// Local rather than Global, so the limit is one copy per signed in user
+    /// rather than one across the whole machine. Two people using the same
+    /// computer at once through fast user switching should each get their own.
+    /// </remarks>
+    private bool ClaimSingleInstance()
+    {
+        try
+        {
+            _singleInstance = new Mutex(initiallyOwned: true, @"Local\DropShelf.SingleInstance", out var createdNew);
+            return createdNew;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            // Cannot tell either way. Starting is the friendlier guess, since the
+            // worst case is a duplicate tray icon rather than an app that refuses
+            // to run at all.
+            return true;
+        }
+    }
+
+    private void OnMessageReceived(object? sender, MessageEventArgs e)
+    {
+        if (e.Message != _showShelfMessage)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        ShowShelfHere();
     }
 
     private void OnHotKeyPressed(object? sender, EventArgs e) => ToggleShelf();
@@ -307,7 +359,12 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        SaveState();
+        // Skipped in the copy that stood down, which never built any of this and
+        // would otherwise overwrite the running copy's saved state with nothing.
+        if (_trayIcon is not null)
+        {
+            SaveState();
+        }
 
         _trayIcon?.Dispose();
         _trayIcon = null;
@@ -330,6 +387,23 @@ public partial class App : Application
 
         _thumbnails?.Dispose();
         _thumbnails = null;
+
+        // Released last, so nothing can start a second copy while this one is
+        // still tearing down and holding the hot key.
+        if (_singleInstance is not null)
+        {
+            try
+            {
+                _singleInstance.ReleaseMutex();
+            }
+            catch (ApplicationException)
+            {
+                // Not the owner, which is the case in the copy that stood down.
+            }
+
+            _singleInstance.Dispose();
+            _singleInstance = null;
+        }
 
         base.OnExit(e);
     }

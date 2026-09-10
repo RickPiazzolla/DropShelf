@@ -218,4 +218,22 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     internal static extern int GetSystemMetrics(int index);
+
+    /// <summary>Broadcast target, meaning every top level window on the desktop.</summary>
+    internal static readonly IntPtr HWND_BROADCAST = new(0xFFFF);
+
+    /// <summary>
+    /// Reserves a message number that is unique system wide for a given string.
+    /// </summary>
+    /// <remarks>
+    /// Every process that registers the same string gets the same number back,
+    /// which is what makes it usable as a private signal between two copies of the
+    /// same application without either knowing the other's window handle.
+    /// </remarks>
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern uint RegisterWindowMessage(string message);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 }
