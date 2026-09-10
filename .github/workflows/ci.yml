@@ -1,0 +1,34 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Windows only, and not a limitation worth apologising for. The app is built
+    # on WPF and calls into the Windows shell throughout, so there is nothing
+    # meaningful to verify on another platform.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        # Warnings are errors in the project file, so this fails on anything the
+        # analysers object to, not only on code that will not compile.
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
