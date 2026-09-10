@@ -6,11 +6,29 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- Only for NotifyIcon. Windows has no other supported way to put an icon
+         in the notification area, and WPF ships nothing equivalent. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\DropShelf.ico</ApplicationIcon>
     <RootNamespace>DropShelf</RootNamespace>
     <AssemblyName>DropShelf</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms adds System.Windows.Forms to the implicit usings, which
+         collides with WPF on Application, MessageBox and several others. Dropping
+         it means the one file that needs WinForms imports it by hand and the rest
+         of the codebase means WPF whenever it says Application. -->
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Also embedded as the executable's own icon by ApplicationIcon above, but
+         that copy is not reachable at runtime. This one is. -->
+    <Resource Include="Assets\DropShelf.ico" />
+  </ItemGroup>
 
   <PropertyGroup>
     <Product>DropShelf</Product>
@@ -25,6 +43,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
+
+    <!-- WFO0003 tells WinForms apps to declare DPI awareness through
+         ApplicationHighDpiMode instead of the manifest. That advice does not
+         apply here. This is a WPF app that references WinForms only for
+         NotifyIcon, WPF reads DPI awareness from the manifest during process
+         start-up, and the WinForms bootstrap that would apply the property is
+         never run. Removing the manifest entry would leave the app DPI unaware. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
 
 </Project>

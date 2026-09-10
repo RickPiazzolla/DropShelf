@@ -1,4 +1,5 @@
 using System.Windows;
+using DropShelf.Tray;
 
 namespace DropShelf;
 
@@ -14,13 +15,27 @@ namespace DropShelf;
 /// </remarks>
 public partial class App : Application
 {
+    private TrayIcon? _trayIcon;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        // Nothing owns the app's lifetime yet. Until the tray icon exists there is
-        // no way for the user to quit, so exit immediately rather than leaving an
-        // invisible process behind.
-        Shutdown();
+        // The default, OnLastWindowClose, would end the process the moment the
+        // shelf is dismissed. The tray icon owns the lifetime instead.
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        _trayIcon = new TrayIcon();
+        _trayIcon.ExitRequested += OnExitRequested;
+    }
+
+    private void OnExitRequested(object? sender, EventArgs e) => Shutdown();
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _trayIcon?.Dispose();
+        _trayIcon = null;
+
+        base.OnExit(e);
     }
 }

@@ -4,8 +4,8 @@ Rough order of work. Items move to Done as they land.
 
 ## Milestone 1 — a shelf that holds things
 
-- [ ] WPF project scaffold targeting .NET 9
-- [ ] Tray icon, no taskbar entry, exit from the tray menu
+- [x] WPF project scaffold targeting .NET 9
+- [x] Tray icon, no taskbar entry, exit from the tray menu
 - [ ] Borderless always-on-top shelf window, draggable by its body
 - [ ] Accept dropped files and hold them in memory
 - [ ] Show held files as a row of tiles
