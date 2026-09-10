@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
+using DropShelf.DropHandling;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
@@ -21,12 +23,14 @@ namespace DropShelf.Shelf;
 public partial class ShelfWindow : Window
 {
     private readonly Model.Shelf _shelf;
+    private readonly DropReader _dropReader;
     private bool _allowClose;
     private bool _positionRestored;
 
-    public ShelfWindow(Model.Shelf shelf)
+    public ShelfWindow(Model.Shelf shelf, DropReader dropReader)
     {
         _shelf = shelf;
+        _dropReader = dropReader;
 
         InitializeComponent();
 
@@ -165,7 +169,7 @@ public partial class ShelfWindow : Window
         // Copy rather than Move. Move would tell the source application that
         // DropShelf has taken ownership, and Explorer acts on that by deleting
         // the original once the drop completes. The shelf only records a path.
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
+        e.Effects = DropReader.CanRead(e.Data)
             ? DragDropEffects.Copy
             : DragDropEffects.None;
 
@@ -176,12 +180,18 @@ public partial class ShelfWindow : Window
 
     private void OnCardDrop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(DataFormats.FileDrop) is string[] paths)
-        {
-            _shelf.AddPaths(paths);
-        }
-
         e.Handled = true;
+
+        try
+        {
+            _shelf.AddPaths(_dropReader.Read(e.Data));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ExternalException)
+        {
+            // Reading a drop means running other applications' data through
+            // parsers and writing files. A failure here loses one drop, which is
+            // recoverable by dropping again, and must not take the app down.
+        }
     }
 
     // Dragging an item off the shelf.

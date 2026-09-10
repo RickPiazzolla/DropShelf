@@ -136,4 +136,46 @@ internal static class NativeMethods
     }
 
     internal static readonly Guid ClsidVirtualDesktopManager = new("aa509086-5ca9-4c25-8f95-589d3c07b48a");
+
+    /// <summary>
+    /// One entry in a FILEGROUPDESCRIPTORW, describing a file that exists only
+    /// inside the application being dragged from.
+    /// </summary>
+    /// <remarks>
+    /// The layout has to match the C declaration byte for byte, because the source
+    /// application writes it into shared memory and this is the only agreement
+    /// about what those bytes mean. It comes to 592 bytes.
+    /// </remarks>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct FILEDESCRIPTORW
+    {
+        public uint dwFlags;
+        public Guid clsid;
+        public int sizelCx;
+        public int sizelCy;
+        public int pointlX;
+        public int pointlY;
+        public uint dwFileAttributes;
+        public long ftCreationTime;
+        public long ftLastAccessTime;
+        public long ftLastWriteTime;
+        public uint nFileSizeHigh;
+        public uint nFileSizeLow;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+        public string cFileName;
+    }
+
+    [DllImport("kernel32.dll")]
+    internal static extern IntPtr GlobalLock(IntPtr handle);
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GlobalUnlock(IntPtr handle);
+
+    [DllImport("kernel32.dll")]
+    internal static extern UIntPtr GlobalSize(IntPtr handle);
+
+    [DllImport("ole32.dll")]
+    internal static extern void ReleaseStgMedium(ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
 }

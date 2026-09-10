@@ -21,9 +21,9 @@ Rough order of work. Items move to Done as they land.
 
 ## Milestone 3 — the awkward cases
 
-- [ ] Virtual files, so attachments dragged out of Outlook and Gmail work
-- [ ] Dragged text and images become real files on the shelf
-- [ ] Dragged links become resolvable items
+- [x] Virtual files, so attachments dragged out of Outlook and Gmail work
+- [x] Dragged text and images become real files on the shelf
+- [x] Dragged links become resolvable items
 - [ ] Multiple shelves at once
 
 ## Milestone 4 — shipping

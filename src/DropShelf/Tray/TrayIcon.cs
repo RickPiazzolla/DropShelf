@@ -26,6 +26,11 @@ public sealed class TrayIcon : IDisposable
     public event EventHandler? ToggleShelfRequested;
 
     /// <summary>
+    /// Raised when the user asks to see where staged files are kept.
+    /// </summary>
+    public event EventHandler? OpenStagingRequested;
+
+    /// <summary>
     /// Raised when the user chooses to quit.
     /// </summary>
     public event EventHandler? ExitRequested;
@@ -39,6 +44,15 @@ public sealed class TrayIcon : IDisposable
         var toggleItem = new ToolStripMenuItem("Show or hide shelf");
         toggleItem.Click += (_, _) => ToggleShelfRequested?.Invoke(this, EventArgs.Empty);
         _menu.Items.Add(toggleItem);
+
+        _menu.Items.Add(new ToolStripSeparator());
+
+        // Content dropped from a browser or an email client has to be written to
+        // disk before the shelf can hold it, and none of it is ever deleted
+        // automatically. This is how the user finds it to clear it out.
+        var stagingItem = new ToolStripMenuItem("Open saved drops folder");
+        stagingItem.Click += (_, _) => OpenStagingRequested?.Invoke(this, EventArgs.Empty);
+        _menu.Items.Add(stagingItem);
 
         _menu.Items.Add(new ToolStripSeparator());
 

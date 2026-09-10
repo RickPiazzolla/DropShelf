@@ -1,6 +1,10 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using DropShelf.DropHandling;
 using DropShelf.Interop;
 using DropShelf.Shelf;
 using DropShelf.Tray;
@@ -25,6 +29,8 @@ public partial class App : Application
     private ThumbnailLoader? _thumbnails;
     private MessageWindow? _messageWindow;
     private GlobalHotKey? _hotKey;
+    private StagingArea? _staging;
+    private DropReader? _dropReader;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -37,6 +43,9 @@ public partial class App : Application
         // Constructed on the UI thread on purpose. It captures this dispatcher so
         // that finished thumbnails come back on the thread allowed to touch them.
         _thumbnails = new ThumbnailLoader();
+
+        _staging = new StagingArea();
+        _dropReader = new DropReader(_staging);
 
         _shelf = new Model.Shelf(_thumbnails);
         _shelfWindow = CreateShelfWindow();
@@ -51,12 +60,13 @@ public partial class App : Application
 
         _trayIcon = new TrayIcon();
         _trayIcon.ToggleShelfRequested += OnToggleShelfRequested;
+        _trayIcon.OpenStagingRequested += OnOpenStagingRequested;
         _trayIcon.ExitRequested += OnExitRequested;
     }
 
     private ShelfWindow CreateShelfWindow()
     {
-        var window = new ShelfWindow(_shelf!);
+        var window = new ShelfWindow(_shelf!, _dropReader!);
 
         // Forces the underlying window to exist without showing it, so the
         // virtual desktop check has a handle to ask about.
@@ -143,6 +153,27 @@ public partial class App : Application
         }
 
         return replacement;
+    }
+
+    private void OnOpenStagingRequested(object? sender, EventArgs e)
+    {
+        if (_staging is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Created on demand. Nothing may ever have been staged, and an
+            // Explorer window reporting a missing folder is a poor answer to
+            // "show me the folder".
+            Directory.CreateDirectory(_staging.Root);
+            Process.Start(new ProcessStartInfo(_staging.Root) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            // Nothing useful to say, and no reason to interrupt.
+        }
     }
 
     private void OnExitRequested(object? sender, EventArgs e) => Shutdown();
