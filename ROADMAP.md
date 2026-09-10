@@ -32,8 +32,8 @@ Rough order of work. Items are ticked as they land.
 - [x] Start with Windows
 - [x] Persist shelf contents across restarts
 - [x] Only one instance runs at a time
-- [ ] Single-file publish and a release build
-- [ ] Build and test on every push
+- [x] Single-file publish and a release build
+- [x] Build and test on every push
 
 ## Settled questions
 

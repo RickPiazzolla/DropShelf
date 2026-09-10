@@ -12,10 +12,13 @@
         Width="150"
         Height="190">
 
+    <!-- The card is fully opaque, unlike the shelf. It appears on top of whatever
+         the user happens to be dragging over, which can be anything at all, and a
+         bright photo behind a translucent card washes the label out completely. -->
     <Border x:Name="Card"
             Margin="14"
             CornerRadius="14,0,0,14"
-            Background="#F0202329"
+            Background="#FF1B1D21"
             BorderBrush="#33FFFFFF"
             BorderThickness="1,1,0,1"
             AllowDrop="True"
