@@ -44,6 +44,24 @@ public sealed class DropReader(StagingArea staging)
     /// </remarks>
     public const string SelfDragFormat = "DropShelf.SelfDrag";
 
+    /// <summary>
+    /// The value stored under <see cref="SelfDragFormat"/>.
+    /// </summary>
+    /// <remarks>
+    /// A string, and that matters. A data object hands arbitrary objects across a
+    /// process boundary by serialising them, and .NET 9 refuses to do that by
+    /// default. Marking the drag with a bool therefore produced a data object that
+    /// worked perfectly inside this process and could fail when Explorer, on the
+    /// other side of the drag, enumerated the formats and asked for the value.
+    /// Strings and string arrays cross that boundary as themselves.
+    /// </remarks>
+    public const string SelfDragValue = "DropShelf";
+
+    /// <summary>
+    /// Marks a data object as originating from this application.
+    /// </summary>
+    public static void MarkAsOwnDrag(IDataObject data) => data.SetData(SelfDragFormat, SelfDragValue);
+
     private readonly StagingArea _staging = staging;
 
     /// <summary>

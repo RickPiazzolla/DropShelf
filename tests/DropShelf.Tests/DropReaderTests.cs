@@ -32,17 +32,31 @@ public sealed class DropReaderTests
     public void RefusesADragThatCameOutOfTheShelf()
     {
         var data = WithText("hello");
-        data.SetData(DropReader.SelfDragFormat, true);
+        DropReader.MarkAsOwnDrag(data);
 
         Assert.False(DropReader.CanRead(data));
         Assert.True(DropReader.IsOwnDrag(data));
     }
 
     [Fact]
+    public void MarksItsOwnDragWithAValueThatCanLeaveTheProcess()
+    {
+        var data = WithText("hello");
+        DropReader.MarkAsOwnDrag(data);
+
+        // A data object carries arbitrary objects between processes by
+        // serialising them, which .NET 9 refuses to do by default. A marker that
+        // is anything other than a string produces a drag that works in process
+        // and can fail the moment the application on the other side asks for the
+        // value. Reading it back as a string is the check that it stayed simple.
+        Assert.IsType<string>(data.GetData(DropReader.SelfDragFormat));
+    }
+
+    [Fact]
     public void ReadsNothingFromItsOwnDragEvenIfAsked()
     {
         var data = WithText("hello");
-        data.SetData(DropReader.SelfDragFormat, true);
+        DropReader.MarkAsOwnDrag(data);
 
         var reader = new DropReader(new StagingArea());
 

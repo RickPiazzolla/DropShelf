@@ -221,7 +221,11 @@ public partial class ShelfWindow : Window
     private Point _pressOrigin;
     private ShelfItem? _pressedItem;
     private ShelfItem? _selectionAnchor;
+
+    // Selection changes that would shrink the selection, held back until the
+    // press is known to have been a click rather than the start of a drag.
     private ShelfItem? _collapseSelectionTo;
+    private ShelfItem? _deselectOnRelease;
 
     private void OnItemMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -265,23 +269,41 @@ public partial class ShelfWindow : Window
     /// removes one item, Shift extends from the last one touched, and a plain
     /// click selects just the one.
     /// <para>
-    /// The exception is a plain press on an item that is already part of a
-    /// selection. Narrowing to it immediately would make dragging a group
-    /// impossible, since the press that begins the drag would first throw the
-    /// group away. So it is deferred to the mouse up, and only happens if the
-    /// press turned out to be a click rather than the start of a drag.
+    /// One rule governs the whole thing: a press must never make the selection
+    /// smaller. A press is ambiguous until the pointer either moves or does not,
+    /// and every press is a potential drag. Shrinking on the way down means the
+    /// press that begins a drag first throws away part of what was about to be
+    /// dragged, which is how a group of three arrives as two.
+    /// </para>
+    /// <para>
+    /// So anything that removes items is recorded and applied on release, and only
+    /// if no drag started. Anything that adds is safe to do immediately, since a
+    /// drag then carries more rather than less.
     /// </para>
     /// </remarks>
     private void ApplySelectionForPress(ShelfItem item)
     {
         _collapseSelectionTo = null;
+        _deselectOnRelease = null;
 
         var modifiers = Keyboard.Modifiers;
 
         if (modifiers.HasFlag(ModifierKeys.Control))
         {
-            _shelf.ToggleSelection(item);
             _selectionAnchor = item;
+
+            if (item.IsSelected)
+            {
+                // Deferred. Users habitually keep Ctrl held down after building a
+                // selection, and toggling here would drop this item from the very
+                // drag it is starting.
+                _deselectOnRelease = item;
+            }
+            else
+            {
+                _shelf.AddToSelection(item);
+            }
+
             return;
         }
 
@@ -293,6 +315,8 @@ public partial class ShelfWindow : Window
 
         if (item.IsSelected && _shelf.SelectedCount > 1)
         {
+            // Also deferred, for the same reason. Narrowing to this one item now
+            // would make dragging a group impossible.
             _collapseSelectionTo = item;
             _selectionAnchor = item;
             return;
@@ -322,11 +346,17 @@ public partial class ShelfWindow : Window
         _pressedItem = null;
 
         // The press was a click after all, not the beginning of a drag, so the
-        // selection narrows to the item that was clicked.
-        if (_collapseSelectionTo is { } item)
+        // changes that would have made the selection smaller can happen now.
+        if (_collapseSelectionTo is { } narrowTo)
         {
             _collapseSelectionTo = null;
-            _shelf.SelectOnly(item);
+            _shelf.SelectOnly(narrowTo);
+        }
+
+        if (_deselectOnRelease is { } deselect)
+        {
+            _deselectOnRelease = null;
+            _shelf.RemoveFromSelection(deselect);
         }
     }
 
@@ -366,9 +396,11 @@ public partial class ShelfWindow : Window
         // after the call happens much later than it reads.
         _pressedItem = null;
 
-        // The press turned into a drag, so the deferred narrowing must not happen.
-        // Otherwise dragging a group of four would quietly drop three of them.
+        // The press turned into a drag, so nothing that would shrink the selection
+        // is allowed to happen. Otherwise dragging a group of four quietly turns
+        // into dragging one, or three.
         _collapseSelectionTo = null;
+        _deselectOnRelease = null;
 
         BeginItemDrag(sender as DependencyObject, item);
     }
@@ -413,8 +445,8 @@ public partial class ShelfWindow : Window
 
         // Marks the drag as ours so that neither the shelf nor the edge catcher
         // will take it back in. See DropReader.SelfDragFormat for why that
-        // matters.
-        data.SetData(DropReader.SelfDragFormat, true);
+        // matters, and SelfDragValue for why it is a string.
+        DropReader.MarkAsOwnDrag(data);
 
         DragDropEffects result;
         IsDraggingOut = true;

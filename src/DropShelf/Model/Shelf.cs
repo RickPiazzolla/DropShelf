@@ -87,6 +87,34 @@ public sealed class Shelf : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Adds one item to the selection, leaving everything else as it is.
+    /// </summary>
+    public void AddToSelection(ShelfItem item)
+    {
+        if (item.IsSelected)
+        {
+            return;
+        }
+
+        item.IsSelected = true;
+        RaiseSelectionChanged();
+    }
+
+    /// <summary>
+    /// Takes one item out of the selection, leaving everything else as it is.
+    /// </summary>
+    public void RemoveFromSelection(ShelfItem item)
+    {
+        if (!item.IsSelected)
+        {
+            return;
+        }
+
+        item.IsSelected = false;
+        RaiseSelectionChanged();
+    }
+
+    /// <summary>
     /// Selects everything between two items inclusive, keeping what was already
     /// selected.
     /// </summary>

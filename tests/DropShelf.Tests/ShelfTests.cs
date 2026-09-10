@@ -278,6 +278,33 @@ public sealed class ShelfTests : IDisposable
     }
 
     [Fact]
+    public void AddingToTheSelectionIsIdempotent()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt")]);
+
+        shelf.AddToSelection(shelf.Items[0]);
+        shelf.AddToSelection(shelf.Items[0]);
+
+        Assert.Equal(1, shelf.SelectedCount);
+    }
+
+    [Fact]
+    public void RemovingFromTheSelectionLeavesTheRestAlone()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt")]);
+        shelf.SelectAll();
+
+        shelf.RemoveFromSelection(shelf.Items[1]);
+
+        Assert.Equal(2, shelf.SelectedCount);
+        Assert.False(shelf.Items[1].IsSelected);
+        Assert.True(shelf.Items[0].IsSelected);
+        Assert.True(shelf.Items[2].IsSelected);
+    }
+
+    [Fact]
     public void RemovesEveryItemInAGroup()
     {
         var shelf = new Shelf();
