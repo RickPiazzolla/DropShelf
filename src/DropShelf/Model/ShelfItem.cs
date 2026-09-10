@@ -17,6 +17,7 @@ namespace DropShelf.Model;
 public sealed class ShelfItem : INotifyPropertyChanged
 {
     private ImageSource? _thumbnail;
+    private bool _isSelected;
 
     private ShelfItem(string fullPath, string displayName, bool isDirectory)
     {
@@ -55,6 +56,30 @@ public sealed class ShelfItem : INotifyPropertyChanged
             }
 
             _thumbnail = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Whether this item is part of the current selection.
+    /// </summary>
+    /// <remarks>
+    /// Kept on the item rather than in a separate list on the shelf. A tile needs
+    /// to show its own selected state, and binding straight to the item it already
+    /// displays is far less to go wrong than keeping a parallel collection in step
+    /// with one that items are constantly being added to and removed from.
+    /// </remarks>
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
             OnPropertyChanged();
         }
     }

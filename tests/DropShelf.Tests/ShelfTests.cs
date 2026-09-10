@@ -173,6 +173,128 @@ public sealed class ShelfTests : IDisposable
     }
 
     [Fact]
+    public void SelectingOneItemDeselectsTheRest()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt")]);
+
+        shelf.SelectOnly(shelf.Items[0]);
+        shelf.SelectOnly(shelf.Items[2]);
+
+        Assert.Equal(1, shelf.SelectedCount);
+        Assert.True(shelf.Items[2].IsSelected);
+        Assert.False(shelf.Items[0].IsSelected);
+    }
+
+    [Fact]
+    public void TogglingLeavesTheRestOfTheSelectionAlone()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt")]);
+
+        shelf.SelectOnly(shelf.Items[0]);
+        shelf.ToggleSelection(shelf.Items[2]);
+
+        Assert.Equal(2, shelf.SelectedCount);
+
+        shelf.ToggleSelection(shelf.Items[2]);
+
+        Assert.Equal(1, shelf.SelectedCount);
+    }
+
+    [Fact]
+    public void SelectsARangeInEitherDirection()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt"), CreateFile("d.txt")]);
+
+        shelf.SelectRange(shelf.Items[3], shelf.Items[1]);
+
+        Assert.Equal(3, shelf.SelectedCount);
+        Assert.False(shelf.Items[0].IsSelected);
+        Assert.True(shelf.Items[1].IsSelected);
+        Assert.True(shelf.Items[3].IsSelected);
+    }
+
+    [Fact]
+    public void ReturnsTheSelectionInShelfOrderNotClickOrder()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt")]);
+
+        // Clicked last first, on purpose.
+        shelf.SelectOnly(shelf.Items[2]);
+        shelf.ToggleSelection(shelf.Items[0]);
+
+        var selection = shelf.SelectionOrJust(shelf.Items[1]);
+
+        Assert.Equal([shelf.Items[0], shelf.Items[2]], selection);
+    }
+
+    [Fact]
+    public void FallsBackToTheOneItemWhenNothingIsSelected()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt")]);
+
+        var selection = shelf.SelectionOrJust(shelf.Items[1]);
+
+        Assert.Equal([shelf.Items[1]], selection);
+    }
+
+    [Fact]
+    public void SelectedCountDropsWhenASelectedItemIsRemoved()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt")]);
+        shelf.SelectAll();
+
+        Assert.Equal(2, shelf.SelectedCount);
+
+        shelf.Remove(shelf.Items[0]);
+
+        Assert.Equal(1, shelf.SelectedCount);
+    }
+
+    [Fact]
+    public void RaisesAChangeNotificationWhenTheSelectionMoves()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt")]);
+
+        var raised = 0;
+        shelf.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Shelf.SelectedCount))
+            {
+                raised++;
+            }
+        };
+
+        shelf.SelectOnly(shelf.Items[0]);
+        shelf.ClearSelection();
+
+        Assert.Equal(2, raised);
+    }
+
+    [Fact]
+    public void RemovesEveryItemInAGroup()
+    {
+        var shelf = new Shelf();
+        shelf.AddPaths([CreateFile("a.txt"), CreateFile("b.txt"), CreateFile("c.txt")]);
+
+        shelf.SelectOnly(shelf.Items[0]);
+        shelf.ToggleSelection(shelf.Items[2]);
+
+        // Passing a live query over the same collection being removed from is the
+        // obvious mistake here, so the method must not care.
+        shelf.RemoveAll(shelf.Items.Where(i => i.IsSelected));
+
+        Assert.Single(shelf.Items);
+        Assert.Equal("b.txt", shelf.Items[0].DisplayName);
+    }
+
+    [Fact]
     public void ReportsWhenAFileHasGoneAway()
     {
         var shelf = new Shelf();

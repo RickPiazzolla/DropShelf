@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using DropShelf.Interop;
 
 namespace DropShelf.Model;
@@ -12,7 +15,7 @@ namespace DropShelf.Model;
 /// <c>C:\Users\Report.pdf</c> and <c>c:\users\report.pdf</c> as the same file and
 /// different applications hand over different casings for the same drop.
 /// </remarks>
-public sealed class Shelf
+public sealed class Shelf : INotifyPropertyChanged
 {
     /// <summary>
     /// Pixel size requested from the shell for tile images.
@@ -31,9 +34,123 @@ public sealed class Shelf
     {
         _thumbnails = thumbnails;
         Items = new ReadOnlyObservableCollection<ShelfItem>(_items);
+
+        // Removing a selected item changes the count without any item's own
+        // IsSelected ever being set, so the collection has to be watched too.
+        _items.CollectionChanged += OnItemsChanged;
     }
 
     public ReadOnlyObservableCollection<ShelfItem> Items { get; }
+
+    /// <summary>
+    /// How many items are currently selected.
+    /// </summary>
+    public int SelectedCount => _items.Count(item => item.IsSelected);
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    /// <summary>
+    /// The selected items in shelf order, or the single item passed in if nothing
+    /// is selected at all.
+    /// </summary>
+    /// <remarks>
+    /// Shelf order rather than the order they were clicked in. Dragging four files
+    /// into a folder should not depend on which one the user happened to click
+    /// first, and the order they see on screen is the only one they can predict.
+    /// </remarks>
+    public IReadOnlyList<ShelfItem> SelectionOrJust(ShelfItem item)
+    {
+        var selected = _items.Where(i => i.IsSelected).ToList();
+        return selected.Count > 0 ? selected : [item];
+    }
+
+    /// <summary>
+    /// Makes this the only selected item.
+    /// </summary>
+    public void SelectOnly(ShelfItem item)
+    {
+        foreach (var candidate in _items)
+        {
+            candidate.IsSelected = ReferenceEquals(candidate, item);
+        }
+
+        RaiseSelectionChanged();
+    }
+
+    /// <summary>
+    /// Adds or removes a single item from the selection, leaving the rest alone.
+    /// </summary>
+    public void ToggleSelection(ShelfItem item)
+    {
+        item.IsSelected = !item.IsSelected;
+        RaiseSelectionChanged();
+    }
+
+    /// <summary>
+    /// Selects everything between two items inclusive, keeping what was already
+    /// selected.
+    /// </summary>
+    public void SelectRange(ShelfItem from, ShelfItem to)
+    {
+        var first = _items.IndexOf(from);
+        var last = _items.IndexOf(to);
+
+        if (first < 0 || last < 0)
+        {
+            // One of them has been removed since. Fall back to the one still here.
+            SelectOnly(_items.Contains(to) ? to : from);
+            return;
+        }
+
+        if (first > last)
+        {
+            (first, last) = (last, first);
+        }
+
+        for (var i = first; i <= last; i++)
+        {
+            _items[i].IsSelected = true;
+        }
+
+        RaiseSelectionChanged();
+    }
+
+    public void SelectAll()
+    {
+        foreach (var item in _items)
+        {
+            item.IsSelected = true;
+        }
+
+        RaiseSelectionChanged();
+    }
+
+    public void ClearSelection()
+    {
+        foreach (var item in _items)
+        {
+            item.IsSelected = false;
+        }
+
+        RaiseSelectionChanged();
+    }
+
+    public void RemoveAll(IEnumerable<ShelfItem> items)
+    {
+        // Copied first. Removing from the collection while enumerating a query
+        // over that same collection would throw partway through.
+        foreach (var item in items.ToList())
+        {
+            _items.Remove(item);
+        }
+    }
+
+    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) => RaiseSelectionChanged();
+
+    private void RaiseSelectionChanged() => OnPropertyChanged(nameof(SelectedCount));
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     /// <summary>
     /// Adds every path that points at something real, ignoring the rest.
