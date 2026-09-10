@@ -15,8 +15,8 @@ Rough order of work. Items move to Done as they land.
 
 - [x] Real shell icons and thumbnails for held files
 - [x] Remove a single item, clear the shelf
-- [ ] Global hotkey to summon and dismiss the shelf
-- [ ] Shelf follows you across virtual desktops
+- [x] Global hotkey to summon and dismiss the shelf
+- [x] Shelf follows you across virtual desktops
 - [ ] Screen-edge trigger so the shelf appears when a drag starts
 
 ## Milestone 3 — the awkward cases
@@ -35,8 +35,10 @@ Rough order of work. Items move to Done as they land.
 
 ## Known unknowns
 
-- Pinning a window to all virtual desktops has no supported API. The plan is to
-  poll the foreground window's desktop and move the shelf to it, which uses only
-  documented `IVirtualDesktopManager` calls.
+- ~~Pinning a window to all virtual desktops has no supported API.~~ Settled. The
+  shelf window is destroyed and rebuilt when it is summoned from a desktop it is
+  not on. A new window is created on the current desktop, so no private API is
+  needed, and the items survive because they live in the model rather than the
+  window.
 - Detecting that a drag has started anywhere on the system needs a low-level mouse
   hook. Needs care to avoid a laggy cursor.

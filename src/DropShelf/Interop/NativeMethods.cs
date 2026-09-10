@@ -85,4 +85,55 @@ internal static class NativeMethods
     [DllImport("gdi32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool DeleteObject(IntPtr handle);
+
+    internal const int WM_HOTKEY = 0x0312;
+
+    [Flags]
+    internal enum HotKeyModifiers : uint
+    {
+        Alt = 0x0001,
+        Control = 0x0002,
+        Shift = 0x0004,
+        Windows = 0x0008,
+
+        /// <summary>
+        /// Suppresses the repeat messages Windows would otherwise send while the
+        /// combination is held down.
+        /// </summary>
+        NoRepeat = 0x4000,
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool RegisterHotKey(IntPtr window, int id, HotKeyModifiers modifiers, uint virtualKey);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool UnregisterHotKey(IntPtr window, int id);
+
+    /// <summary>
+    /// Reports and changes which virtual desktop a window belongs to.
+    /// </summary>
+    /// <remarks>
+    /// This is the only supported virtual desktop API. The richer interfaces that
+    /// would allow pinning a window to every desktop are undocumented and their
+    /// interface identifiers change between Windows builds, so an app built
+    /// against them breaks on the next feature update.
+    /// </remarks>
+    [ComImport]
+    [Guid("a5cd92ff-29be-454c-8d04-d82879fb3f1b")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IVirtualDesktopManager
+    {
+        [PreserveSig]
+        int IsWindowOnCurrentVirtualDesktop(IntPtr topLevelWindow, [MarshalAs(UnmanagedType.Bool)] out bool onCurrentDesktop);
+
+        [PreserveSig]
+        int GetWindowDesktopId(IntPtr topLevelWindow, out Guid desktopId);
+
+        [PreserveSig]
+        int MoveWindowToDesktop(IntPtr topLevelWindow, in Guid desktopId);
+    }
+
+    internal static readonly Guid ClsidVirtualDesktopManager = new("aa509086-5ca9-4c25-8f95-589d3c07b48a");
 }

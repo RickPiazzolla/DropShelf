@@ -22,6 +22,7 @@ public partial class ShelfWindow : Window
 {
     private readonly Model.Shelf _shelf;
     private bool _allowClose;
+    private bool _positionRestored;
 
     public ShelfWindow(Model.Shelf shelf)
     {
@@ -30,12 +31,21 @@ public partial class ShelfWindow : Window
         InitializeComponent();
 
         DataContext = _shelf;
-        SourceInitialized += OnSourceInitialized;
     }
 
-    private void OnSourceInitialized(object? sender, EventArgs e)
+    /// <summary>
+    /// Puts a replacement window where its predecessor was.
+    /// </summary>
+    /// <remarks>
+    /// Used when the shelf has to be rebuilt to follow the user to another
+    /// virtual desktop. Without this the shelf would jump back to its default
+    /// corner every time, which would feel like a bug rather than a feature.
+    /// </remarks>
+    public void RestorePosition(double left, double top)
     {
-        MoveToDefaultPosition();
+        _positionRestored = true;
+        Left = left;
+        Top = top;
     }
 
     /// <summary>
@@ -60,6 +70,16 @@ public partial class ShelfWindow : Window
     public void ShowShelf()
     {
         Show();
+
+        // Positioned after Show rather than during window creation. The default
+        // position is measured from the window's own width, and until the window
+        // has been laid out that width is zero, which would park the shelf just
+        // off the right hand edge of the screen.
+        if (!_positionRestored)
+        {
+            _positionRestored = true;
+            MoveToDefaultPosition();
+        }
 
         // Topmost is set in XAML, but another topmost window shown later will sit
         // above this one. Re-asserting it on every show pushes the shelf back to
