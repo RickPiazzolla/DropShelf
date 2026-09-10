@@ -122,15 +122,32 @@
                     </TextBlock>
 
                     <!-- Plain names for now. Icons and proper tiles come next. -->
-                    <ItemsControl ItemsSource="{Binding Items}" Margin="10,8,10,8">
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="6,6,6,6">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding DisplayName}"
-                                           Margin="0,0,0,4"
-                                           FontSize="12"
-                                           TextTrimming="CharacterEllipsis"
-                                           Foreground="#E6FFFFFF"
-                                           ToolTip="{Binding FullPath}" />
+                                <!-- A transparent background rather than none.
+                                     An unpainted Border is invisible to hit
+                                     testing, so the gaps between letters would
+                                     not start a drag. -->
+                                <Border x:Name="Row"
+                                        Background="Transparent"
+                                        CornerRadius="6"
+                                        Padding="8,5"
+                                        Cursor="Hand"
+                                        ToolTip="{Binding FullPath}"
+                                        PreviewMouseLeftButtonDown="OnItemMouseLeftButtonDown"
+                                        PreviewMouseMove="OnItemMouseMove"
+                                        PreviewMouseLeftButtonUp="OnItemMouseLeftButtonUp">
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontSize="12"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="#E6FFFFFF" />
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Row" Property="Background" Value="#1FFFFFFF" />
+                                    </Trigger>
+                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

@@ -9,7 +9,7 @@ Rough order of work. Items move to Done as they land.
 - [x] Borderless always-on-top shelf window, draggable by its header
 - [x] Accept dropped files and hold them in memory
 - [ ] Show held files as a row of tiles
-- [ ] Drag files back out to Explorer and other apps
+- [x] Drag files back out to Explorer and other apps
 
 ## Milestone 2 — feels like a real utility
 

@@ -22,6 +22,10 @@
          it means the one file that needs WinForms imports it by hand and the rest
          of the codebase means WPF whenever it says Application. -->
     <Using Remove="System.Windows.Forms" />
+
+    <!-- Same reason. System.Drawing.Point and System.Windows.Point are different
+         types with the same name, and WPF hit testing works in the latter. -->
+    <Using Remove="System.Drawing" />
   </ItemGroup>
 
   <ItemGroup>
