@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RootNamespace>DropShelf</RootNamespace>
+    <AssemblyName>DropShelf</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>DropShelf</Product>
+    <Company>Riccardo Piazzolla</Company>
+    <Copyright>Copyright (c) 2026 Riccardo Piazzolla</Copyright>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- The app spends its life reacting to drag messages from other processes.
+         Treating warnings as errors keeps that surface honest. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+</Project>
