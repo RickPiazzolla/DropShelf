@@ -17,6 +17,8 @@ public sealed class TrayIcon : IDisposable
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _menu;
+    private readonly ToolStripMenuItem _startWithWindowsItem;
+    private readonly ToolStripMenuItem _rememberShelfItem;
     private readonly Icon _icon;
     private bool _disposed;
 
@@ -29,6 +31,13 @@ public sealed class TrayIcon : IDisposable
     /// Raised when the user asks to see where staged files are kept.
     /// </summary>
     public event EventHandler? OpenStagingRequested;
+
+    /// <summary>
+    /// Raised with the new value when a settings toggle is switched.
+    /// </summary>
+    public event EventHandler<bool>? StartWithWindowsToggled;
+
+    public event EventHandler<bool>? RememberShelfToggled;
 
     /// <summary>
     /// Raised when the user chooses to quit.
@@ -44,6 +53,19 @@ public sealed class TrayIcon : IDisposable
         var toggleItem = new ToolStripMenuItem("Show or hide shelf");
         toggleItem.Click += (_, _) => ToggleShelfRequested?.Invoke(this, EventArgs.Empty);
         _menu.Items.Add(toggleItem);
+
+        _menu.Items.Add(new ToolStripSeparator());
+
+        // Checkable menu items rather than a settings window. There are two
+        // choices to make, and a whole dialog to hold two checkboxes would be more
+        // ceremony than the decisions deserve.
+        _startWithWindowsItem = new ToolStripMenuItem("Start with Windows") { CheckOnClick = true };
+        _startWithWindowsItem.CheckedChanged += OnStartWithWindowsChanged;
+        _menu.Items.Add(_startWithWindowsItem);
+
+        _rememberShelfItem = new ToolStripMenuItem("Remember shelf between sessions") { CheckOnClick = true };
+        _rememberShelfItem.CheckedChanged += OnRememberShelfChanged;
+        _menu.Items.Add(_rememberShelfItem);
 
         _menu.Items.Add(new ToolStripSeparator());
 
@@ -71,6 +93,28 @@ public sealed class TrayIcon : IDisposable
 
         _notifyIcon.MouseClick += OnMouseClick;
     }
+
+    /// <summary>
+    /// Sets the tick marks to match stored settings without raising the toggle
+    /// events, which would otherwise write the value straight back on start-up.
+    /// </summary>
+    public void ShowSettings(bool startWithWindows, bool rememberShelf)
+    {
+        _startWithWindowsItem.CheckedChanged -= OnStartWithWindowsChanged;
+        _rememberShelfItem.CheckedChanged -= OnRememberShelfChanged;
+
+        _startWithWindowsItem.Checked = startWithWindows;
+        _rememberShelfItem.Checked = rememberShelf;
+
+        _startWithWindowsItem.CheckedChanged += OnStartWithWindowsChanged;
+        _rememberShelfItem.CheckedChanged += OnRememberShelfChanged;
+    }
+
+    private void OnStartWithWindowsChanged(object? sender, EventArgs e)
+        => StartWithWindowsToggled?.Invoke(this, _startWithWindowsItem.Checked);
+
+    private void OnRememberShelfChanged(object? sender, EventArgs e)
+        => RememberShelfToggled?.Invoke(this, _rememberShelfItem.Checked);
 
     private void OnMouseClick(object? sender, MouseEventArgs e)
     {

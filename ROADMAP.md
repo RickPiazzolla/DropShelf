@@ -1,8 +1,8 @@
-# Roadmap
+﻿# Roadmap
 
 Rough order of work. Items move to Done as they land.
 
-## Milestone 1 — a shelf that holds things
+## Milestone 1 â€” a shelf that holds things
 
 - [x] WPF project scaffold targeting .NET 9
 - [x] Tray icon, no taskbar entry, exit from the tray menu
@@ -11,7 +11,7 @@ Rough order of work. Items move to Done as they land.
 - [x] Show held files as a grid of tiles
 - [x] Drag files back out to Explorer and other apps
 
-## Milestone 2 — feels like a real utility
+## Milestone 2 â€” feels like a real utility
 
 - [x] Real shell icons and thumbnails for held files
 - [x] Remove a single item, clear the shelf
@@ -19,18 +19,18 @@ Rough order of work. Items move to Done as they land.
 - [x] Shelf follows you across virtual desktops
 - [x] Screen-edge trigger so the shelf appears when a drag starts
 
-## Milestone 3 — the awkward cases
+## Milestone 3 â€” the awkward cases
 
 - [x] Virtual files, so attachments dragged out of Outlook and Gmail work
 - [x] Dragged text and images become real files on the shelf
 - [x] Dragged links become resolvable items
 - [ ] Multiple shelves at once
 
-## Milestone 4 — shipping
+## Milestone 4 â€” shipping
 
-- [ ] Settings window
-- [ ] Start with Windows
-- [ ] Persist shelf contents across restarts
+- [x] Settings as tray menu toggles rather than a window
+- [x] Start with Windows
+- [x] Persist shelf contents across restarts
 - [ ] Single-file publish and a release build
 
 ## Known unknowns
