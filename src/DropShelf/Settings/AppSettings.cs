@@ -26,6 +26,17 @@ public sealed class AppSettings
     /// <summary>Whether the shelf contents survive a restart.</summary>
     public bool RememberShelf { get; set; } = true;
 
+    /// <summary>
+    /// Whether an item leaves the shelf once it has been dragged somewhere.
+    /// </summary>
+    /// <remarks>
+    /// Off by default. Leaving items in place lets the same file be dropped in
+    /// several destinations, which is the safer behaviour to be surprised by. The
+    /// people who want it want it because the shelf is a queue for them: drop
+    /// things on, deal with them one at a time, and watch the pile go down.
+    /// </remarks>
+    public bool RemoveAfterDragOut { get; set; }
+
     /// <summary>Last known shelf position, null until it has been moved.</summary>
     public double? ShelfLeft { get; set; }
 

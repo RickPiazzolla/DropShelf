@@ -25,8 +25,18 @@ of the screen and a catcher slides in to drop onto.
 ![The catcher at the screen edge](docs/catcher.png)
 
 **Take something off.** Drag any tile out to Explorer, an upload field, an email,
-anywhere that accepts a file. Items stay on the shelf after you drag them out, so
-you can drop the same file in several places.
+anywhere that accepts a file.
+
+**Take several off at once.** Click to select, `Ctrl+click` to add or remove one,
+`Shift+click` to extend a run. Then drag any selected tile and the whole group
+goes together, in the order you see on screen.
+
+![Three items selected](docs/selection.png)
+
+By default items stay on the shelf after you drag them out, so you can drop the
+same file in several places. Turn on **Remove items after dragging them out** in
+the tray menu if you would rather treat the shelf as a queue that empties as you
+work through it.
 
 **Everything else.**
 
@@ -35,6 +45,10 @@ you can drop the same file in several places.
 | `Ctrl+Shift+D` | Show or hide the shelf |
 | Click the tray icon | Show or hide the shelf |
 | Drag the header bar | Move the shelf |
+| Click a tile | Select it |
+| `Ctrl+click` | Add or remove one tile from the selection |
+| `Shift+click` | Select everything between here and the last one |
+| Click the background | Clear the selection |
 | Double click a tile | Open the file |
 | Hover a tile | A remove badge appears |
 | Bin icon in the header | Take everything off |

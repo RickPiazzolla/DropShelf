@@ -19,6 +19,7 @@ public sealed class TrayIcon : IDisposable
     private readonly ContextMenuStrip _menu;
     private readonly ToolStripMenuItem _startWithWindowsItem;
     private readonly ToolStripMenuItem _rememberShelfItem;
+    private readonly ToolStripMenuItem _removeAfterDragItem;
     private readonly Icon _icon;
     private bool _disposed;
 
@@ -38,6 +39,8 @@ public sealed class TrayIcon : IDisposable
     public event EventHandler<bool>? StartWithWindowsToggled;
 
     public event EventHandler<bool>? RememberShelfToggled;
+
+    public event EventHandler<bool>? RemoveAfterDragOutToggled;
 
     /// <summary>
     /// Raised when the user chooses to quit.
@@ -66,6 +69,10 @@ public sealed class TrayIcon : IDisposable
         _rememberShelfItem = new ToolStripMenuItem("Remember shelf between sessions") { CheckOnClick = true };
         _rememberShelfItem.CheckedChanged += OnRememberShelfChanged;
         _menu.Items.Add(_rememberShelfItem);
+
+        _removeAfterDragItem = new ToolStripMenuItem("Remove items after dragging them out") { CheckOnClick = true };
+        _removeAfterDragItem.CheckedChanged += OnRemoveAfterDragChanged;
+        _menu.Items.Add(_removeAfterDragItem);
 
         _menu.Items.Add(new ToolStripSeparator());
 
@@ -98,17 +105,23 @@ public sealed class TrayIcon : IDisposable
     /// Sets the tick marks to match stored settings without raising the toggle
     /// events, which would otherwise write the value straight back on start-up.
     /// </summary>
-    public void ShowSettings(bool startWithWindows, bool rememberShelf)
+    public void ShowSettings(bool startWithWindows, bool rememberShelf, bool removeAfterDragOut)
     {
         _startWithWindowsItem.CheckedChanged -= OnStartWithWindowsChanged;
         _rememberShelfItem.CheckedChanged -= OnRememberShelfChanged;
+        _removeAfterDragItem.CheckedChanged -= OnRemoveAfterDragChanged;
 
         _startWithWindowsItem.Checked = startWithWindows;
         _rememberShelfItem.Checked = rememberShelf;
+        _removeAfterDragItem.Checked = removeAfterDragOut;
 
         _startWithWindowsItem.CheckedChanged += OnStartWithWindowsChanged;
         _rememberShelfItem.CheckedChanged += OnRememberShelfChanged;
+        _removeAfterDragItem.CheckedChanged += OnRemoveAfterDragChanged;
     }
+
+    private void OnRemoveAfterDragChanged(object? sender, EventArgs e)
+        => RemoveAfterDragOutToggled?.Invoke(this, _removeAfterDragItem.Checked);
 
     private void OnStartWithWindowsChanged(object? sender, EventArgs e)
         => StartWithWindowsToggled?.Invoke(this, _startWithWindowsItem.Checked);
